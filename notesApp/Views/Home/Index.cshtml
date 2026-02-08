@@ -1,0 +1,245 @@
+@{
+    ViewBag.Title = "My Notes";
+}
+
+<div class="notes-app">
+    <!-- Sidebar with notes list -->
+    <div class="notes-sidebar">
+        <div class="sidebar-header">
+            <h4>My Notes</h4>
+            <button class="btn-add-note" id="btnAddNote" title="New Note">
+                <span class="glyphicon glyphicon-plus"></span>
+            </button>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchNotes" class="form-control" placeholder="Search notes...">
+        </div>
+        <div class="notes-list" id="notesList">
+            <!-- Notes will be loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Main note editor area -->
+    <div class="note-editor">
+        <div class="editor-header">
+            <input type="hidden" id="noteId" value="">
+            <input type="text" id="noteTitle" class="note-title-input" placeholder="Note title...">
+            <div class="editor-actions">
+                <button class="btn-editor" id="btnSave" title="Save">
+                    <span class="glyphicon glyphicon-floppy-disk"></span>
+                </button>
+                <button class="btn-editor" id="btnDelete" title="Delete">
+                    <span class="glyphicon glyphicon-trash"></span>
+                </button>
+            </div>
+        </div>
+        <div class="editor-toolbar">
+            <button class="btn-toolbar" title="Bold"><b>B</b></button>
+            <button class="btn-toolbar" title="Italic"><i>I</i></button>
+            <button class="btn-toolbar" title="Underline"><u>U</u></button>
+            <span class="toolbar-divider"></span>
+            <button class="btn-toolbar" title="Bullet List">
+                <span class="glyphicon glyphicon-list"></span>
+            </button>
+            <button class="btn-toolbar" title="Numbered List">
+                <span class="glyphicon glyphicon-th-list"></span>
+            </button>
+        </div>
+        <textarea id="noteContent" class="note-content" placeholder="Start writing your note..."></textarea>
+    </div>
+</div>
+
+<!-- Empty state (hidden by default) -->
+<div class="empty-state" id="emptyState" style="display: none;">
+    <div class="empty-icon">
+        <span class="glyphicon glyphicon-file"></span>
+    </div>
+    <h3>No notes yet</h3>
+    <p>Click the + button to create your first note</p>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            var antiForgeryToken = '@Html.AntiForgeryToken()';
+            var token = $(antiForgeryToken).val();
+
+            // Load notes on page load
+            loadNotes();
+
+            function loadNotes() {
+                $.ajax({
+                    url: '/Notes/GetAll',
+                    type: 'GET',
+                    success: function (notes) {
+                        renderNotesList(notes);
+                        if (notes.length > 0) {
+                            selectNote(notes[0]);
+                            $('.notes-app').show();
+                            $('#emptyState').hide();
+                        } else {
+                            showEmptyState();
+                        }
+                    },
+                    error: function () {
+                        alert('Failed to load notes');
+                    }
+                });
+            }
+
+            function renderNotesList(notes) {
+                var $list = $('#notesList');
+                $list.empty();
+
+                notes.forEach(function (note) {
+                    var preview = note.Content ? note.Content.substring(0, 50) : 'No content';
+                    var dateStr = formatDate(note.UpdatedAt);
+                    var $item = $('<div class="note-item" data-id="' + note.Id + '">' +
+                        '<div class="note-title">' + escapeHtml(note.Title) + '</div>' +
+                        '<div class="note-preview">' + escapeHtml(preview) + '</div>' +
+                        '<div class="note-date">' + dateStr + '</div>' +
+                        '</div>');
+                    $item.data('note', note);
+                    $list.append($item);
+                });
+
+                // Bind click events
+                $('.note-item').click(function () {
+                    $('.note-item').removeClass('active');
+                    $(this).addClass('active');
+                    var note = $(this).data('note');
+                    selectNote(note);
+                });
+            }
+
+            function selectNote(note) {
+                $('#noteId').val(note.Id);
+                $('#noteTitle').val(note.Title);
+                $('#noteContent').val(note.Content);
+                $('.note-item').removeClass('active');
+                $('.note-item[data-id="' + note.Id + '"]').addClass('active');
+            }
+
+            function showEmptyState() {
+                $('.notes-app').hide();
+                $('#emptyState').show();
+            }
+
+            function formatDate(dateString) {
+                var date = new Date(dateString);
+                var now = new Date();
+                var diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) return 'Today';
+                if (diffDays === 1) return 'Yesterday';
+                if (diffDays < 7) return diffDays + ' days ago';
+                return date.toLocaleDateString();
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Add note button
+            $('#btnAddNote').click(function () {
+                $('#noteId').val('');
+                $('#noteTitle').val('');
+                $('#noteContent').val('');
+                $('.note-item').removeClass('active');
+                $('#noteTitle').focus();
+
+                // Show editor if in empty state
+                $('.notes-app').show();
+                $('#emptyState').hide();
+            });
+
+            // Save button
+            $('#btnSave').click(function () {
+                var id = $('#noteId').val();
+                var title = $('#noteTitle').val().trim();
+                var content = $('#noteContent').val();
+
+                if (!title && !content) {
+                    alert('Please enter a title or content');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/Notes/Save',
+                    type: 'POST',
+                    data: {
+                        id: id || null,
+                        title: title || 'Untitled Note',
+                        content: content,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            loadNotes();
+                            $('#noteId').val(response.note.Id);
+                        } else {
+                            alert(response.message || 'Failed to save note');
+                        }
+                    },
+                    error: function () {
+                        alert('Failed to save note');
+                    }
+                });
+            });
+
+            // Delete button
+            $('#btnDelete').click(function () {
+                var id = $('#noteId').val();
+                if (!id) {
+                    // Just clear if new note
+                    $('#noteTitle').val('');
+                    $('#noteContent').val('');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to delete this note?')) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '/Notes/Delete',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            loadNotes();
+                            $('#noteId').val('');
+                            $('#noteTitle').val('');
+                            $('#noteContent').val('');
+                        } else {
+                            alert(response.message || 'Failed to delete note');
+                        }
+                    },
+                    error: function () {
+                        alert('Failed to delete note');
+                    }
+                });
+            });
+
+            // Search functionality
+            $('#searchNotes').on('input', function () {
+                var searchTerm = $(this).val().toLowerCase();
+                $('.note-item').each(function () {
+                    var title = $(this).find('.note-title').text().toLowerCase();
+                    var preview = $(this).find('.note-preview').text().toLowerCase();
+                    if (title.includes(searchTerm) || preview.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        });
+    </script>
+}

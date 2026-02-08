@@ -1,0 +1,131 @@
+############################################
+# Visual Studio / .NET Framework (.NET 4.x)
+############################################
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache
+.vs/
+.vscode/
+
+############################################
+# Build results
+############################################
+
+# Build folders
+bin/
+obj/
+
+# MSBuild logs
+*.log
+
+############################################
+# Debug / Release
+############################################
+
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+############################################
+# ASP.NET
+############################################
+
+# IIS / local server files
+*.vspscc
+*.vssscc
+*.scc
+
+# Published output
+publish/
+PublishProfiles/
+
+############################################
+# NuGet
+############################################
+
+# NuGet packages (OPTIONAL – see note below)
+packages/
+
+# NuGet v3 cache (global, usually not in repo)
+*.nupkg
+*.snupkg
+
+############################################
+# Resharper / Rider
+############################################
+
+_ReSharper*/
+*.DotSettings.user
+
+############################################
+# Logs
+############################################
+
+*.log
+*.svclog
+
+############################################
+# OS files
+############################################
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+############################################
+# SQL Server / LocalDB
+############################################
+
+*.mdf
+*.ldf
+
+############################################
+# Test results
+############################################
+
+TestResults/
+*.trx
+
+############################################
+# Backup & temp files
+############################################
+
+*.bak
+*.tmp
+*.temp
+*~
+*.old
+
+############################################
+# Web.config transforms (keep main file)
+############################################
+
+Web.Debug.config
+Web.Release.config
+
+############################################
+# Node (if used in ASP.NET project)
+############################################
+
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+############################################
+# Secrets (IMPORTANT)
+############################################
+
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
